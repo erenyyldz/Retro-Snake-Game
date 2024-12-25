@@ -19,6 +19,14 @@ number_of_cells = 25
 
 OFFSET = 75
 
+#Music
+
+music = pygame.mixer.music.load("original_snake_game_music.mp3")
+pygame.mixer.music.set_volume(0.07)
+pygame.mixer.music.play(-1)
+
+
+
 class Food:
     def __init__(self, snake_body):
         self.position = self.generate_random_pos(snake_body)
@@ -40,12 +48,12 @@ class Food:
 
 class Snake:
     def __init__(self):
-        self.body = [Vector2(6,9), Vector2(5,9), Vector2(4,9)]
+        self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]
         self.direction = Vector2(1, 0)
         self.add_segment = False
-        self.eat_sound = pygame.mixer.Sound("eat.mp3")
-        self.wall_hit_sound = pygame.mixer.Sound("wall.mp3")
-
+        self.eat_sound = pygame.mixer.Sound("music_food.mp3")
+        self.wall_hit_sound = pygame.mixer.Sound("music_gameover.mp3")
+        self.move_sound = pygame.mixer.Sound("music_move.mp3")
 
     def draw(self):
         for segment in self.body:
@@ -63,12 +71,27 @@ class Snake:
         self.body = [Vector2(6,9), Vector2(5,9), Vector2(4,9)]
         self.direction = Vector2(1, 0)
 
+    def check_collision_with_food(self):
+        if self.snake.body[0] == self.food.position:
+            self.food.position = self.food.generate_random_pos(self.snake.body)
+            self.snake.add_segment = True
+            self.score += 1
+            self.snake.eat_sound.play()
+            self.increase_speed()  # Gradually increase speed
+
+
 class Game:
     def __init__(self):
         self.snake = Snake()
         self.food = Food(self.snake.body)
         self.state = "RUNNING"
         self.score = 0
+        self.speed = 10  # Initial speed (milliseconds between updates)
+
+    def increase_speed(self):
+        if self.speed > 50:  # Set a minimum speed limit (50 ms between updates)
+            self.speed -= 10  # Decrease the interval by 10 ms
+            pygame.time.set_timer(SNAKE_UPDATE, self.speed)  # Update the timer
 
     def draw(self):
         self.food.draw()
@@ -107,6 +130,15 @@ class Game:
         if self.snake.body[0] in headless_body:
             self.game_over()
 
+    def game_over(self):
+        self.snake.reset()
+        self.food.position = self.food.generate_random_pos(self.snake.body)
+        self.state = "STOPPED"
+        self.score = 0
+        self.snake.wall_hit_sound.play()
+        pygame.mixer.music.stop()  # Stop the current music
+        pygame.mixer.music.play(-1)  # Restart the music
+
 screen = pygame.display.set_mode((2*OFFSET + cell_size*number_of_cells, 2*OFFSET + cell_size*number_of_cells))
 
 pygame.display.set_caption("Retro Snake")
@@ -118,7 +150,7 @@ game = Game()
 food_surface = pygame.image.load("food.png")
 
 SNAKE_UPDATE = pygame.USEREVENT
-pygame.time.set_timer(SNAKE_UPDATE, 200)
+pygame.time.set_timer(SNAKE_UPDATE, 150)
 
 while True:
     for event in pygame.event.get():
@@ -131,22 +163,32 @@ while True:
         if event.type == pygame.KEYDOWN:
             if game.state == "STOPPED":
                 game.state = "RUNNING"
+
+            # Check for valid direction change and play sound
             if event.key == pygame.K_w and game.snake.direction != Vector2(0, 1):
                 game.snake.direction = Vector2(0, -1)
+                game.snake.move_sound.play()  # Play move sound
             if event.key == pygame.K_s and game.snake.direction != Vector2(0, -1):
                 game.snake.direction = Vector2(0, 1)
+                game.snake.move_sound.play()  # Play move sound
             if event.key == pygame.K_d and game.snake.direction != Vector2(-1, 0):
                 game.snake.direction = Vector2(1, 0)
+                game.snake.move_sound.play()  # Play move sound
             if event.key == pygame.K_a and game.snake.direction != Vector2(1, 0):
                 game.snake.direction = Vector2(-1, 0)
+                game.snake.move_sound.play()  # Play move sound
             if event.key == pygame.K_UP and game.snake.direction != Vector2(0, 1):
                 game.snake.direction = Vector2(0, -1)
+                game.snake.move_sound.play()  # Play move sound
             if event.key == pygame.K_DOWN and game.snake.direction != Vector2(0, -1):
                 game.snake.direction = Vector2(0, 1)
+                game.snake.move_sound.play()  # Play move sound
             if event.key == pygame.K_RIGHT and game.snake.direction != Vector2(-1, 0):
                 game.snake.direction = Vector2(1, 0)
+                game.snake.move_sound.play()  # Play move sound
             if event.key == pygame.K_LEFT and game.snake.direction != Vector2(1, 0):
-                    game.snake.direction = Vector2(-1, 0)
+                game.snake.direction = Vector2(-1, 0)
+                game.snake.move_sound.play()  # Play move sound
 
     #Drawing
     screen.fill(GREEN)
